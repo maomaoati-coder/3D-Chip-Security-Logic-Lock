@@ -1,0 +1,69 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 maomaoati-coder
+Project: 3D Chip Security Logic Lock (3D芯片安全逻辑锁)
+Repository: https://github.com/maomaoati-coder/3D-Chip-Security-Logic-Lock
+
+ALL RIGHTS RESERVED.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TERMS AND CONDITIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. OWNERSHIP
+   All intellectual property rights in this design, including but not limited to
+   RTL source code, simulation testbenches, technical papers, verification reports,
+   architecture diagrams, and all associated documentation (collectively, "the Design")
+   are the exclusive property of the copyright holder.
+
+2. RESTRICTIONS
+   Without prior written authorization from the copyright holder, you may NOT:
+   (a) Copy, reproduce, or duplicate any part of the Design;
+   (b) Use the Design or any portion thereof in any product, service, or research;
+   (c) Distribute, sublicense, sell, or transfer the Design to any third party;
+   (d) Modify, adapt, translate, or create derivative works based on the Design;
+   (e) Reverse engineer, decompile, or disassemble the Design;
+   (f) File any patent, trademark, or intellectual property application
+       based on or derived from the Design.
+
+3. PERMITTED USE
+   Viewing this repository for reference and educational purposes only is permitted,
+   provided that no portion of the Design is copied, reproduced, or used.
+
+4. ATTRIBUTION REQUIREMENT
+   Any research publication, presentation, or technical report that references
+   this Design must include the following attribution:
+   "3D Chip Security Logic Lock by maomaoati-coder (2026),
+    https://github.com/maomaoati-coder/3D-Chip-Security-Logic-Lock"
+
+5. LICENSING INQUIRIES
+   For commercial licensing, research collaboration, or authorized use,
+   contact the copyright holder via GitHub Issues or Discussions.
+   Licensing models available: per-unit royalty, joint development, equity participation.
+
+6. NO WARRANTY
+   THE DESIGN IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+   THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING
+   FROM THE USE OR INABILITY TO USE THE DESIGN.
+
+7. VIOLATION CONSEQUENCES
+   Unauthorized use, copying, or distribution of the Design constitutes
+   infringement of the copyright holder's intellectual property rights
+   and may result in civil and criminal liability.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+中文摘要 / CHINESE SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+版权所有 (c) 2026 maomaoati-coder，保留所有权利。
+
+本设计的全部RTL代码、仿真测试台、技术论文及相关文档，
+均为版权人的专有知识产权。未经版权人书面授权，
+严禁任何形式的复制、使用、分发或衍生开发。
+
+授权合作请通过GitHub Issues或Discussions联系版权人。
+可探讨的合作模式：IP授权（按量提成）/ 联合开发 / 技术入股。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF LICENSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
