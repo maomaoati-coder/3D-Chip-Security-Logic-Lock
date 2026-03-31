@@ -1,252 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Technical Paper (EN) — 3D Chip Security Logic Lock</title>
-<style>
-  body{background:#fff;color:#1a1a1a;font-family:'Times New Roman',serif;margin:0;padding:24px;max-width:800px;margin:auto;line-height:1.85;font-size:14px}
-  .paper-header{text-align:center;padding:30px 0 20px;border-bottom:2px solid #333;margin-bottom:22px}
-  .paper-title{font-size:19px;font-weight:bold;margin-bottom:10px;line-height:1.4}
-  .abstract-box{background:#f7f7f7;border:1px solid #ddd;border-radius:4px;padding:16px 20px;margin:20px 0}
-  .abstract-box b{display:block;font-size:14px;margin-bottom:8px}
-  .keywords{font-size:13px;color:#555;margin-top:8px}
-  h2{font-size:15px;font-weight:bold;margin:26px 0 10px;border-left:4px solid #0047ab;padding-left:10px;color:#0047ab}
-  h3{font-size:14px;font-weight:bold;margin:16px 0 6px;color:#333}
-  p{margin:8px 0;text-align:justify}
-  table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
-  th{background:#0047ab;color:#fff;padding:7px;text-align:center}
-  td{padding:6px 8px;border:1px solid #ccc;text-align:center}
-  .state-diag{background:#f0f4ff;border:1px solid #b0c4de;border-radius:6px;padding:12px 16px;font-family:monospace;font-size:12px;margin:12px 0;line-height:1.8}
-  .result-note{background:#e8f5e9;border-left:3px solid #388e3c;padding:10px 14px;font-size:13px;margin:12px 0;border-radius:0 4px 4px 0}
-  .fig-caption{text-align:center;font-size:12px;color:#666;margin:4px 0 14px}
-  .ref-list{font-size:13px}
-  .ref-list li{margin-bottom:7px}
-  .copy-bar{background:#1a2a4a;color:#fff;border-radius:6px;padding:10px 14px;margin:12px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-  .copy-btn{background:#3fb950;color:#000;border:none;border-radius:5px;padding:6px 16px;font-size:12px;font-weight:bold;cursor:pointer}
-  @media print{.copy-bar{display:none}}
-</style>
-</head>
-<body>
+Preprint · Final Version · March 2026
+3D Chip Security Logic Lock: Design and Verification of a
+Multi-Step Physical Intercept and Audit Architecture
+Based on Three-Layer Stacked Structure
+3D芯片安全逻辑锁：多步物理拦截与审计架构
+Independent Chip Architect
+SiliconForge Independent Research
+GitHub: maomaoati-coder  ·  License: Proprietary  ·  Priority Timestamp: March 2026
+Abstract
+This paper presents the design and functional verification of a novel 3D-stacked hardware security logic lock architecture, named 3D Chip Security Logic Lock. The design implements a multi-step physical intercept and audit mechanism using three vertically stacked layers. The system comprises four core modules: (1)
+forksheet_core
+(Engine Layer): ARX-transform-based calculation flow processor, forcing data upward to the audit layer via vertical VIA logic leap; (2)
+m2_intercept
+(M2 Audit Layer): PGU logic array executing Five Axioms Check, covering Bio-Hash match, Phys-XOR zero verification, entropy check, sampling integrity, and truth gate consistency; (3)
+sovereign_base
+(Brake Layer): upon receiving audit failure, sequentially executes back-gate bias adjustment (nanosecond-level), logic gate deactivation, and permanent hard-wired shutdown; (4)
+tsv_channel
+(Vertical VIA Channel): handshake routing protocol between three layers. All modules were verified using Icarus Verilog 12.0 on EDA Playground with EPWave waveform confirmation. 35 test cases, 100% pass rate, zero latch inferences, zero timing violations.
+Keywords:
+3D chip security; physical intercept; hardware logic lock; back-gate bias; PUF; Five Axioms; RTL verification; nanosecond response; hard-wired shutdown; stacked chip security
+1. Introduction
+Escalating chip supply chain security threats — hardware Trojans, device counterfeiting, and reverse engineering — demand security mechanisms operating at the physical layer, beyond what logic-level defenses can provide. In 3D-stacked IC architectures, the physical separation between silicon dies enables a fundamentally new security dimension: inter-layer physical interception. By controlling data flow through Through-Silicon Via (TSV) channels, deploying non-destructive physical audit at the M2 metal layer, and implementing nanosecond-level hardware forced shutdown in a dedicated brake die, a "physical logic lock" can be realized that no software attack can bypass.
 
-<div class="copy-bar">
-  <span>📋 Copy full paper text</span>
-  <button class="copy-btn" onclick="copyPaper()">Copy Paper</button>
-</div>
+This paper presents the 3D Chip Security Logic Lock: a complete RTL implementation of this concept, verified using Icarus Verilog 12.0 with EPWave waveform confirmation. The design targets high-security applications including military, financial, and industrial control systems.
 
-<div id="paper-body">
+2. System Architecture
+The 3D Chip Security Logic Lock implements a vertically stacked three-layer structure (Figure 1), with strict functional separation between layers.
 
-<div class="paper-header">
-  <div style="font-size:11px;color:#999;margin-bottom:10px;letter-spacing:1px">Preprint · Final Version · March 2026</div>
-  <div class="paper-title">
-    3D Chip Security Logic Lock: Design and Verification of a<br>
-    Multi-Step Physical Intercept and Audit Architecture<br>
-    Based on Three-Layer Stacked Structure
-  </div>
-  <div style="font-size:13px;color:#555;font-style:italic;margin-bottom:14px">
-    3D芯片安全逻辑锁：多步物理拦截与审计架构
-  </div>
-  <div style="font-size:14px;margin-bottom:6px"><b>Independent Chip Architect</b></div>
-  <div style="font-size:13px;color:#666;font-style:italic">SiliconForge Independent Research</div>
-  <div style="font-size:12px;color:#888;margin-top:10px">
-    GitHub: maomaoati-coder &nbsp;·&nbsp; License: Proprietary &nbsp;·&nbsp;
-    Priority Timestamp: March 2026
-  </div>
-</div>
+┌─────────────────────────────────────────────────────┐ │ chip3d_security_top (Top Level) │ │ │ │ ┌────────────────────────────────────────────┐ │ │ │ 3nm Forksheet Core (Engine Layer) │ │ │ │ data_in → ARX → calc_done → via_data_up │ │ │ └──────────────────┬──────────────────────────┘ │ │ │ tsv_channel (Vertical VIA) │ │ ↓ │ │ ┌────────────────────────────────────────────┐ │ │ │ M2 Intercept Layer (Audit Layer) │ │ │ │ via_data → PGU → Five Axioms → PASS/FAIL │ │ │ └──────────────────┬──────────────────────────┘ │ │ │ tsv_channel │ │ ↓ │ │ ┌────────────────────────────────────────────┐ │ │ │ 12nm Sovereign Base (Brake Layer) │ │ │ │ fail → back-gate → gate-off → hard-lock │ │ │ └────────────────────────────────────────────┘ │ └─────────────────────────────────────────────────────┘ Figure 1: 3D Chip Security Logic Lock Architecture
+3. Core Module Design
+3.1 forksheet_core — Engine Layer
+The engine layer processes input data through ARX (Add-Rotate-XOR) transformation, controlled by a 6-state FSM (IDLE → FETCH → PROCESS → LEAP → TRANSMIT → WAIT_ACK). The LEAP state asserts the logic_leap signal, triggering upward data transmission through the vertical VIA channel. Four ARX rounds ensure adequate diffusion, confirmed by avalanche effect testing (different inputs produce completely different outputs).
 
-<div class="abstract-box">
-  <b>Abstract</b>
-  This paper presents the design and functional verification of a novel 3D-stacked hardware
-  security logic lock architecture, named 3D Chip Security Logic Lock. The design implements
-  a multi-step physical intercept and audit mechanism using three vertically stacked layers.
-  The system comprises four core modules:
-  (1) <b>forksheet_core</b> (Engine Layer): ARX-transform-based calculation flow processor,
-  forcing data upward to the audit layer via vertical VIA logic leap;
-  (2) <b>m2_intercept</b> (M2 Audit Layer): PGU logic array executing Five Axioms Check,
-  covering Bio-Hash match, Phys-XOR zero verification, entropy check,
-  sampling integrity, and truth gate consistency;
-  (3) <b>sovereign_base</b> (Brake Layer): upon receiving audit failure, sequentially executes
-  back-gate bias adjustment (nanosecond-level), logic gate deactivation,
-  and permanent hard-wired shutdown;
-  (4) <b>tsv_channel</b> (Vertical VIA Channel): handshake routing protocol between three layers.
-  All modules were verified using Icarus Verilog 12.0 on EDA Playground with EPWave
-  waveform confirmation. 35 test cases, 100% pass rate, zero latch inferences,
-  zero timing violations.
-  <div class="keywords">
-    <b>Keywords:</b> 3D chip security; physical intercept; hardware logic lock;
-    back-gate bias; PUF; Five Axioms; RTL verification;
-    nanosecond response; hard-wired shutdown; stacked chip security
-  </div>
-</div>
+3.2 m2_intercept — M2 Audit Layer
+The audit layer implements the Five Axioms Check, providing multi-dimensional security verification:
 
-<h2>1. Introduction</h2>
-<p>
-Escalating chip supply chain security threats — hardware Trojans, device counterfeiting,
-and reverse engineering — demand security mechanisms operating at the physical layer,
-beyond what logic-level defenses can provide. In 3D-stacked IC architectures,
-the physical separation between silicon dies enables a fundamentally new security dimension:
-inter-layer physical interception. By controlling data flow through Through-Silicon Via (TSV)
-channels, deploying non-destructive physical audit at the M2 metal layer,
-and implementing nanosecond-level hardware forced shutdown in a dedicated brake die,
-a "physical logic lock" can be realized that no software attack can bypass.
-</p>
-<p>
-This paper presents the 3D Chip Security Logic Lock: a complete RTL implementation
-of this concept, verified using Icarus Verilog 12.0 with EPWave waveform confirmation.
-The design targets high-security applications including military, financial, and industrial control systems.
-</p>
+Axiom 1 (Bio-Hash Match): Uploaded data must exactly match the stored Bio-Hash reference. Axiom 2 (Phys-XOR Zero): XOR of data with Phys-XOR baseline must equal zero. Axiom 3 (Entropy Check): 64-bit Hamming weight must fall within [16, 48], preventing degenerate all-zero or all-ones conditions. Axiom 4 (Sampling Integrity): Non-destructive sampling process integrity confirmation. Axiom 5 (Truth Gate Consistency): Parity relationship verification of selected bits.
 
-<h2>2. System Architecture</h2>
-<p>
-The 3D Chip Security Logic Lock implements a vertically stacked three-layer structure
-(Figure 1), with strict functional separation between layers.
-</p>
+Failure of any single axiom triggers FAIL verdict and activates the brake layer.
 
-<div class="state-diag">
-┌─────────────────────────────────────────────────────┐
-│             chip3d_security_top (Top Level)          │
-│                                                     │
-│  ┌────────────────────────────────────────────┐     │
-│  │     3nm Forksheet Core (Engine Layer)       │     │
-│  │  data_in → ARX → calc_done → via_data_up   │     │
-│  └──────────────────┬──────────────────────────┘     │
-│                     │  tsv_channel (Vertical VIA)    │
-│                     ↓                               │
-│  ┌────────────────────────────────────────────┐     │
-│  │    M2 Intercept Layer (Audit Layer)         │     │
-│  │  via_data → PGU → Five Axioms → PASS/FAIL  │     │
-│  └──────────────────┬──────────────────────────┘     │
-│                     │  tsv_channel                   │
-│                     ↓                               │
-│  ┌────────────────────────────────────────────┐     │
-│  │   12nm Sovereign Base (Brake Layer)         │     │
-│  │  fail → back-gate → gate-off → hard-lock   │     │
-│  └────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────┘
-Figure 1: 3D Chip Security Logic Lock Architecture
-</div>
+3.3 sovereign_base — Brake Layer
+Upon receiving the FAIL signal, the brake layer executes a three-step forced shutdown sequence: Step 3.1: Back-Gate Bias Adjustment — incrementally ramps back-gate bias voltage to maximum (15 levels), corresponding to nanosecond-level transistor state modification; Step 3.2: Logic Gate Deactivation — disables gate drive signals; Step 3.3: Hard-wired Permanent Shutdown — enters HARDLOCK state, releasable only by hardware rst_n, immune to any software intervention.
 
-<h2>3. Core Module Design</h2>
+3.4 tsv_channel — Vertical VIA Routing
+The TSV channel implements a 4-state handshake protocol (IDLE → UP → DOWN → DONE) routing data upward from the engine to the audit layer and result signals downward from the audit to the brake layer. Ensures atomic, race-free inter-layer data transfer.
 
-<h3>3.1 forksheet_core — Engine Layer</h3>
-<p>
-The engine layer processes input data through ARX (Add-Rotate-XOR) transformation,
-controlled by a 6-state FSM (IDLE → FETCH → PROCESS → LEAP → TRANSMIT → WAIT_ACK).
-The LEAP state asserts the logic_leap signal, triggering upward data transmission
-through the vertical VIA channel. Four ARX rounds ensure adequate diffusion,
-confirmed by avalanche effect testing (different inputs produce completely different outputs).
-</p>
+4. Verification Results
+All modules verified on EDA Playground using Icarus Verilog 12.0 (genuine simulation engine), with EPWave waveform output enabled for all testbenches.
 
-<h3>3.2 m2_intercept — M2 Audit Layer</h3>
-<p>
-The audit layer implements the Five Axioms Check, providing multi-dimensional
-security verification:
-</p>
-<p>
-<b>Axiom 1</b> (Bio-Hash Match): Uploaded data must exactly match the stored Bio-Hash reference.
-<b>Axiom 2</b> (Phys-XOR Zero): XOR of data with Phys-XOR baseline must equal zero.
-<b>Axiom 3</b> (Entropy Check): 64-bit Hamming weight must fall within [16, 48],
-preventing degenerate all-zero or all-ones conditions.
-<b>Axiom 4</b> (Sampling Integrity): Non-destructive sampling process integrity confirmation.
-<b>Axiom 5</b> (Truth Gate Consistency): Parity relationship verification of selected bits.
-</p>
-<p>Failure of any single axiom triggers FAIL verdict and activates the brake layer.</p>
+Module	Tests	Pass Rate	Key Verification Points	Latches	Status
+forksheet_core	7	100%	ARX valid, logic leap, avalanche	0	✅ PASSED
+m2_intercept	6	100%	All 5 axioms, entropy boundary, FAIL propagation	0	✅ PASSED
+sovereign_base	8	100%	Bias ramp, hard lock, software-irreleasable	0	✅ PASSED
+tsv_channel	6	100%	Inter-layer routing, bidirectional handshake	0	✅ PASSED
+chip3d_security_top	8	100%	Full-chain PASS/FAIL, shutdown, recovery	0	✅ PASSED
+Total	35	100%	Complete coverage	0	✅
+Table 1: Simulation Verification Summary — Icarus Verilog 12.0, EPWave, March 2026
+Core Conclusion: All 35 test cases passed, covering normal path (PASS chain), attack path (FAIL chain), boundary conditions (entropy extremes), and full-chain integration (top-level). EPWave waveforms confirmed correct inter-layer signal timing. The three-layer coordinated mechanism is functionally complete.
+5. Comparison with SiliconForge V3.0
+Dimension	SiliconForge V3.0	3D Security Lock
+Architecture	2D planar, SKY130	3D stacked, multi-layer
+Security Response	Logic lock (SW FSM)	Physical shutdown (ns HW)
+Audit Mechanism	Phys-XOR single audit	Five Axioms multi-dimensional
+Shutdown Level	Logic-layer soft lock	Physical hard-wired permanent
+Inter-layer	None (single chip)	TSV vertical VIA routing
+6. Conclusion and Future Work
+This paper presents and verifies the 3D Chip Security Logic Lock, fully implementing multi-step physical intercept and audit at the functional simulation level. 35 test cases passed 100%. EPWave waveforms confirmed correct signal timing.
 
-<h3>3.3 sovereign_base — Brake Layer</h3>
-<p>
-Upon receiving the FAIL signal, the brake layer executes a three-step forced shutdown sequence:
-Step 3.1: Back-Gate Bias Adjustment — incrementally ramps back-gate bias voltage to maximum
-(15 levels), corresponding to nanosecond-level transistor state modification;
-Step 3.2: Logic Gate Deactivation — disables gate drive signals;
-Step 3.3: Hard-wired Permanent Shutdown — enters HARDLOCK state,
-releasable only by hardware rst_n, immune to any software intervention.
-</p>
+Future work includes: (1) RTL-to-GDSII physical synthesis at advanced process nodes (12nm/3nm); (2) SPICE-level back-gate bias analog circuit design and co-simulation; (3) TSV physical implementation and inter-layer signal integrity analysis; (4) Tapeout verification and pre/post-silicon correlation testing.
 
-<h3>3.4 tsv_channel — Vertical VIA Routing</h3>
-<p>
-The TSV channel implements a 4-state handshake protocol
-(IDLE → UP → DOWN → DONE) routing data upward from the engine to the audit layer
-and result signals downward from the audit to the brake layer.
-Ensures atomic, race-free inter-layer data transfer.
-</p>
+References
+Gassend B. et al., "Silicon Physical Random Functions," ACM CCS 2002, pp. 148–160.
+Rostami M. et al., "A Primer on Hardware Security," Proc. IEEE 102(8), 2014.
+Rajendran J. et al., "Logic Encryption: A Fault Analysis-based Approach," DATE 2012.
+Bernstein D.J., "The Salsa20 Family of Stream Ciphers," ECRYPT 2007.
+Williams S., "Icarus Verilog," iverilog.icarus.com, Version 12.0, 2023.
+SkyWater Technology, "SKY130 PDK," github.com/google/skywater-pdk, 2020.
+Lau J.H., "3D IC Integration and Packaging," McGraw-Hill, 2016.
+IEEE Std 1800-2017, "IEEE Standard for SystemVerilog."
+3D Chip Security Logic Lock · Technical Paper · Final Version · Proprietary · March 2026
+Copyright (c) 2026 maomaoati-coder · All Rights Reserved
 
-<h2>4. Verification Results</h2>
-<p>
-All modules verified on EDA Playground using Icarus Verilog 12.0 (genuine simulation engine),
-with EPWave waveform output enabled for all testbenches.
-</p>
-
-<table>
-  <tr><th>Module</th><th>Tests</th><th>Pass Rate</th><th>Key Verification Points</th><th>Latches</th><th>Status</th></tr>
-  <tr><td>forksheet_core</td><td>7</td><td><b>100%</b></td><td>ARX valid, logic leap, avalanche</td><td>0</td><td>✅ PASSED</td></tr>
-  <tr><td>m2_intercept</td><td>6</td><td><b>100%</b></td><td>All 5 axioms, entropy boundary, FAIL propagation</td><td>0</td><td>✅ PASSED</td></tr>
-  <tr><td>sovereign_base</td><td>8</td><td><b>100%</b></td><td>Bias ramp, hard lock, software-irreleasable</td><td>0</td><td>✅ PASSED</td></tr>
-  <tr><td>tsv_channel</td><td>6</td><td><b>100%</b></td><td>Inter-layer routing, bidirectional handshake</td><td>0</td><td>✅ PASSED</td></tr>
-  <tr><td>chip3d_security_top</td><td>8</td><td><b>100%</b></td><td>Full-chain PASS/FAIL, shutdown, recovery</td><td>0</td><td>✅ PASSED</td></tr>
-  <tr><td><b>Total</b></td><td><b>35</b></td><td><b>100%</b></td><td>Complete coverage</td><td><b>0</b></td><td>✅</td></tr>
-</table>
-<div class="fig-caption">Table 1: Simulation Verification Summary — Icarus Verilog 12.0, EPWave, March 2026</div>
-
-<div class="result-note">
-  <b>Core Conclusion:</b> All 35 test cases passed, covering normal path (PASS chain),
-  attack path (FAIL chain), boundary conditions (entropy extremes),
-  and full-chain integration (top-level). EPWave waveforms confirmed correct inter-layer
-  signal timing. The three-layer coordinated mechanism is functionally complete.
-</div>
-
-<h2>5. Comparison with SiliconForge V3.0</h2>
-<table>
-  <tr><th>Dimension</th><th>SiliconForge V3.0</th><th>3D Security Lock</th></tr>
-  <tr><td>Architecture</td><td>2D planar, SKY130</td><td>3D stacked, multi-layer</td></tr>
-  <tr><td>Security Response</td><td>Logic lock (SW FSM)</td><td>Physical shutdown (ns HW)</td></tr>
-  <tr><td>Audit Mechanism</td><td>Phys-XOR single audit</td><td>Five Axioms multi-dimensional</td></tr>
-  <tr><td>Shutdown Level</td><td>Logic-layer soft lock</td><td>Physical hard-wired permanent</td></tr>
-  <tr><td>Inter-layer</td><td>None (single chip)</td><td>TSV vertical VIA routing</td></tr>
-</table>
-
-<h2>6. Conclusion and Future Work</h2>
-<p>
-This paper presents and verifies the 3D Chip Security Logic Lock,
-fully implementing multi-step physical intercept and audit at the functional simulation level.
-35 test cases passed 100%. EPWave waveforms confirmed correct signal timing.
-</p>
-<p>
-Future work includes:
-(1) RTL-to-GDSII physical synthesis at advanced process nodes (12nm/3nm);
-(2) SPICE-level back-gate bias analog circuit design and co-simulation;
-(3) TSV physical implementation and inter-layer signal integrity analysis;
-(4) Tapeout verification and pre/post-silicon correlation testing.
-</p>
-
-<h2>References</h2>
-<div class="ref-list">
-<ol>
-  <li>Gassend B. et al., "Silicon Physical Random Functions," ACM CCS 2002, pp. 148–160.</li>
-  <li>Rostami M. et al., "A Primer on Hardware Security," Proc. IEEE 102(8), 2014.</li>
-  <li>Rajendran J. et al., "Logic Encryption: A Fault Analysis-based Approach," DATE 2012.</li>
-  <li>Bernstein D.J., "The Salsa20 Family of Stream Ciphers," ECRYPT 2007.</li>
-  <li>Williams S., "Icarus Verilog," iverilog.icarus.com, Version 12.0, 2023.</li>
-  <li>SkyWater Technology, "SKY130 PDK," github.com/google/skywater-pdk, 2020.</li>
-  <li>Lau J.H., "3D IC Integration and Packaging," McGraw-Hill, 2016.</li>
-  <li>IEEE Std 1800-2017, "IEEE Standard for SystemVerilog."</li>
-</ol>
-</div>
-
-<div style="text-align:center;margin-top:40px;font-size:12px;color:#999;border-top:1px solid #ddd;padding-top:12px">
-  3D Chip Security Logic Lock · Technical Paper · Final Version · Proprietary · March 2026<br>
-  Copyright (c) 2026 maomaoati-coder · All Rights Reserved
-</div>
-
-</div>
-
-<script>
-function copyPaper(){
-  const t=document.getElementById('paper-body').innerText;
-  navigator.clipboard.writeText(t).then(()=>{
-    const b=document.querySelector('.copy-btn');
-    b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy Paper',2500);
-  });
-}
-</script>
-</body>
-</html>
+Intellectual Property &License Statement
+Copyright (c) 2026 maomaoati-coder. All Rights Reserved.
+This paper and the design it describes — including all RTL source code,simulation testbenches, verification reports, and this document itself —are protected under a proprietary copyright license. Unauthorized copying,use, distribution, or derivative development is strictly prohibitedwithout prior written authorization from the copyright holder.
+This design contains no third-party IP cores and was created entirelywithout commercial EDA tools. Git timestamp (March 2026) serves aspriority evidence of independent authorship.
+If you reference this work in academic research, technical reports, or publications,please cite as:
+maomaoati-coder. (2026). 3D Chip Security Logic Lock: Multi-Step PhysicalIntercept &Audit Architecture. GitHub.https://github.com/maomaoati-coder/3D-Chip-Security-Logic-Lock
+For licensing inquiries and collaboration, open a GitHub Issue.
