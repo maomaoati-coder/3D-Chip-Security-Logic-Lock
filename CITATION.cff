@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use or reference this design, please cite it as below."
+type: software
+title: "3D Chip Security Logic Lock: Multi-Step Physical Intercept & Audit"
+abstract: >
+  A novel 3D-stacked hardware security logic lock implementing five-axiom audit,
+  nanosecond back-gate bias response, and permanent hard-wired shutdown.
+  Five modules verified with Icarus Verilog 12.0 on EDA Playground (35 test cases, 100% pass).
+authors:
+  - name: "maomaoati-coder"
+    alias: "Independent Chip Architect"
+repository-code: "https://github.com/maomaoati-coder/3D-Chip-Security-Logic-Lock"
+date-released: "2026-03-30"
+version: "1.0.0"
+license: "Proprietary"
+keywords:
+  - "hardware security"
+  - "3D chip"
+  - "logic lock"
+  - "physical intercept"
+  - "Five Axioms"
+  - "back-gate bias"
+  - "RTL verification"
+  - "Icarus Verilog"
+  - "EPWave"
