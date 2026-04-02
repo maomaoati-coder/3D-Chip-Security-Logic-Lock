@@ -1,0 +1,65 @@
+`timescale 1ns/1ps
+module tb_m2_intercept;
+reg clk,rst_n,via_valid;
+reg [63:0] via_data,stored_biohash,stored_physxor;
+wire axiom1_pass,axiom2_pass,axiom3_pass,axiom4_pass,axiom5_pass;
+wire intercept_pass,intercept_fail; wire [2:0] audit_state;
+m2_intercept dut(.clk(clk),.rst_n(rst_n),.via_data(via_data),
+    .via_valid(via_valid),.stored_biohash(stored_biohash),
+    .stored_physxor(stored_physxor),.axiom1_pass(axiom1_pass),
+    .axiom2_pass(axiom2_pass),.axiom3_pass(axiom3_pass),
+    .axiom4_pass(axiom4_pass),.axiom5_pass(axiom5_pass),
+    .intercept_pass(intercept_pass),.intercept_fail(intercept_fail),
+    .audit_state(audit_state));
+initial clk=0; always #5 clk=~clk;
+integer pass_cnt=0,fail_cnt=0;
+initial begin $dumpfile("m2_intercept.vcd"); $dumpvars(0,tb_m2_intercept); end
+task check; input cond; input [191:0] label; begin
+    if(cond) begin $display("[PASS] %s",label); pass_cnt=pass_cnt+1; end
+    else     begin $display("[FAIL] %s",label); fail_cnt=fail_cnt+1; end
+end endtask
+task wait_v; integer i; begin
+    for(i=0;i<30;i=i+1) begin @(posedge clk);#1;
+    if(intercept_pass||intercept_fail) i=30; end end endtask
+task do_rst; begin @(negedge clk); rst_n=0; via_valid=0;
+    repeat(2) @(posedge clk); rst_n=1; @(posedge clk); #1; end endtask
+initial begin
+    $display("===========================================");
+    $display("  m2_intercept Verification V2.0");
+    $display("===========================================");
+    rst_n=0; via_data=0; via_valid=0;
+    stored_biohash=64'hDEADBEEFCAFEBABE;
+    stored_physxor=64'hDEADBEEFCAFEBABE;
+    repeat(3) @(posedge clk); rst_n=1; @(posedge clk); #1;
+    check(audit_state===3'd0,    "TC01_reset_to_IDLE");
+    check(intercept_pass===1'b0, "TC01_pass_low");
+    check(intercept_fail===1'b0, "TC01_fail_low");
+    @(negedge clk); via_data=64'hDEADBEEFCAFEBABE; via_valid=1;
+    @(posedge clk); #1; via_valid=0; wait_v;
+    check(axiom1_pass===1'b1, "TC02_axiom1_match");
+    check(axiom2_pass===1'b1, "TC02_axiom2_xor_zero");
+    check(axiom4_pass===1'b1, "TC02_axiom4_sample_ok");
+    do_rst; stored_biohash=64'hDEADBEEFCAFEBABE; stored_physxor=64'hDEADBEEFCAFEBABE;
+    @(negedge clk); via_data=64'h1111111111111111; via_valid=1;
+    @(posedge clk); #1; via_valid=0; wait_v;
+    check(axiom1_pass===1'b0,    "TC03_axiom1_mismatch");
+    check(intercept_fail===1'b1, "TC03_fail_asserted");
+    do_rst; stored_biohash=64'd0; stored_physxor=64'd0;
+    @(negedge clk); via_data=64'd0; via_valid=1;
+    @(posedge clk); #1; via_valid=0; wait_v;
+    check(axiom3_pass===1'b0, "TC04_zero_entropy_fail");
+    do_rst; stored_biohash=64'hFFFFFFFFFFFFFFFF; stored_physxor=64'hFFFFFFFFFFFFFFFF;
+    @(negedge clk); via_data=64'hFFFFFFFFFFFFFFFF; via_valid=1;
+    @(posedge clk); #1; via_valid=0; wait_v;
+    check(axiom3_pass===1'b0, "TC05_allones_entropy_fail");
+    do_rst;
+    check(audit_state===3'd0,    "TC06_reset_exits_fail");
+    check(intercept_fail===1'b0, "TC06_fail_cleared");
+    $display("===========================================");
+    $display("  PASSED: %0d | FAILED: %0d",pass_cnt,fail_cnt);
+    if(fail_cnt==0) $display("  m2_intercept ALL PASSED");
+    $display("===========================================");
+    $finish;
+end
+initial begin #200000; $display("[TIMEOUT]"); $finish; end
+endmodule
