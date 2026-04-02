@@ -1,0 +1,69 @@
+// ============================================================
+// sovereign_base — 3D Chip Security Logic Lock
+// Brake Layer: Back-gate bias adjustment + Hard-wired shutdown
+// Simulator: Icarus Verilog 12.0 | EDA Playground
+// ============================================================
+module sovereign_base (
+    input  wire        clk,
+    input  wire        rst_n,
+    input  wire        audit_pass,
+    input  wire        audit_fail,
+    output reg         backgate_adj,
+    output reg  [3:0]  bias_level,
+    output reg         hard_shutdown,
+    output reg         logic_gate_off,
+    output reg         brake_active,
+    output reg  [2:0]  base_state
+);
+
+localparam B_STANDBY  = 3'd0;
+localparam B_TRIGGER  = 3'd1;
+localparam B_BACKGATE = 3'd2;
+localparam B_SHUTDOWN = 3'd3;
+localparam B_HARDLOCK = 3'd4;
+localparam B_PASS_OK  = 3'd5;
+
+reg [3:0] bc;
+reg [7:0] nc;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        base_state<=B_STANDBY; backgate_adj<=1'b0;
+        bias_level<=4'd0; hard_shutdown<=1'b0;
+        logic_gate_off<=1'b0; brake_active<=1'b0;
+        bc<=4'd0; nc<=8'd0;
+    end else begin
+        case (base_state)
+            B_STANDBY: begin
+                backgate_adj<=1'b0; logic_gate_off<=1'b0;
+                brake_active<=1'b0; bias_level<=4'd0;
+                if(audit_fail)      base_state<=B_TRIGGER;
+                else if(audit_pass) base_state<=B_PASS_OK;
+            end
+            B_TRIGGER: begin
+                brake_active<=1'b1; bc<=4'd0; nc<=8'd0;
+                base_state<=B_BACKGATE;
+            end
+            B_BACKGATE: begin
+                backgate_adj<=1'b1;
+                if(bc<4'd15) begin bias_level<=bc; bc<=bc+1; end
+                else begin bias_level<=4'd15; base_state<=B_SHUTDOWN; end
+            end
+            B_SHUTDOWN: begin
+                logic_gate_off<=1'b1; backgate_adj<=1'b0;
+                if(nc<8'd4) nc<=nc+1;
+                else        base_state<=B_HARDLOCK;
+            end
+            B_HARDLOCK: begin
+                hard_shutdown<=1'b1; logic_gate_off<=1'b1; brake_active<=1'b1;
+            end
+            B_PASS_OK: begin
+                backgate_adj<=1'b0; logic_gate_off<=1'b0;
+                brake_active<=1'b0; hard_shutdown<=1'b0;
+                base_state<=B_STANDBY;
+            end
+            default: base_state<=B_STANDBY;
+        endcase
+    end
+end
+endmodule
