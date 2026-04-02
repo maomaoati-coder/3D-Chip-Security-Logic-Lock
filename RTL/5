@@ -1,0 +1,144 @@
+// ============================================================
+// forksheet_core
+// ============================================================
+module forksheet_core(input wire clk,rst_n,data_valid,input wire [63:0] data_in,
+    output reg [63:0] via_data_up,output reg via_valid,logic_leap,calc_done,output reg [2:0] core_state);
+localparam IDLE=3'd0,FETCH=3'd1,PROCESS=3'd2,LEAP=3'd3,TRANSMIT=3'd4,WAIT_ACK=3'd5;
+reg [63:0] ca,cb,cr; reg [3:0] pc;
+function [63:0] farx; input [63:0] a,b; reg [63:0] t;
+    begin t=a+b;t=(t<<17)|(t>>47);t=t^b;t=t+64'h6c62272e07bb0142;farx=t; end endfunction
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin core_state<=IDLE;via_data_up<=0;via_valid<=0;
+        logic_leap<=0;calc_done<=0;ca<=0;cb<=0;cr<=0;pc<=0; end
+    else case(core_state)
+        IDLE:     begin via_valid<=0;logic_leap<=0;calc_done<=0;if(data_valid) core_state<=FETCH; end
+        FETCH:    begin ca<=data_in;cb<=data_in^64'h9e3779b97f4a7c15;pc<=0;core_state<=PROCESS; end
+        PROCESS:  begin cr<=farx(ca,cb);ca<=cb;cb<=farx(ca,cb);pc<=pc+1;if(pc>=4'd3) core_state<=LEAP; end
+        LEAP:     begin logic_leap<=1;calc_done<=1;core_state<=TRANSMIT; end
+        TRANSMIT: begin via_data_up<=cr;via_valid<=1;logic_leap<=0;core_state<=WAIT_ACK; end
+        WAIT_ACK: begin via_valid<=0;core_state<=IDLE; end
+        default:  core_state<=IDLE;
+    endcase
+end
+endmodule
+
+// ============================================================
+// m2_intercept
+// ============================================================
+module m2_intercept(input wire clk,rst_n,via_valid,input wire [63:0] via_data,stored_biohash,stored_physxor,
+    output reg axiom1_pass,axiom2_pass,axiom3_pass,axiom4_pass,axiom5_pass,
+    output reg intercept_pass,intercept_fail,output reg [2:0] audit_state);
+localparam A_IDLE=3'd0,A_SAMPLE=3'd1,A_PGU=3'd2,A_AXIOM=3'd3,A_VERDICT=3'd4,A_FAIL=3'd5;
+reg [63:0] sd; reg [3:0] ac; reg [6:0] hw_reg;
+function [6:0] hw64; input [63:0] v; integer k; reg [6:0] c;
+    begin c=0;for(k=0;k<64;k=k+1)c=c+v[k];hw64=c; end endfunction
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin audit_state<=A_IDLE;axiom1_pass<=0;axiom2_pass<=0;axiom3_pass<=0;
+        axiom4_pass<=0;axiom5_pass<=0;intercept_pass<=0;intercept_fail<=0;sd<=0;ac<=0;hw_reg<=0; end
+    else case(audit_state)
+        A_IDLE:    begin intercept_pass<=0;intercept_fail<=0;axiom1_pass<=0;axiom2_pass<=0;axiom3_pass<=0;axiom5_pass<=0;
+                         if(via_valid) begin sd<=via_data;audit_state<=A_SAMPLE; end end
+        A_SAMPLE:  begin axiom4_pass<=1;hw_reg<=hw64(via_data);audit_state<=A_PGU; end
+        A_PGU:     begin audit_state<=A_AXIOM;ac<=0; end
+        A_AXIOM:   begin axiom1_pass<=(sd==stored_biohash);axiom2_pass<=((sd^stored_physxor)==64'd0);
+                         axiom3_pass<=(hw_reg>=7'd16&&hw_reg<=7'd48);
+                         axiom5_pass<=((sd[63]^sd[0]^sd[31]^sd[32])==1'b0);
+                         if(ac>=4'd1) audit_state<=A_VERDICT; ac<=ac+1; end
+        A_VERDICT: begin if(axiom1_pass&&axiom2_pass&&axiom3_pass&&axiom4_pass&&axiom5_pass)
+                       begin intercept_pass<=1;intercept_fail<=0;audit_state<=A_IDLE; end
+                   else begin intercept_pass<=0;intercept_fail<=1;audit_state<=A_FAIL; end end
+        A_FAIL:    begin intercept_fail<=1;intercept_pass<=0; end
+        default:   audit_state<=A_IDLE;
+    endcase
+end
+endmodule
+
+// ============================================================
+// sovereign_base
+// ============================================================
+module sovereign_base(input wire clk,rst_n,audit_pass,audit_fail,
+    output reg backgate_adj,output reg [3:0] bias_level,
+    output reg hard_shutdown,logic_gate_off,brake_active,output reg [2:0] base_state);
+localparam B_STANDBY=3'd0,B_TRIGGER=3'd1,B_BACKGATE=3'd2,B_SHUTDOWN=3'd3,B_HARDLOCK=3'd4,B_PASS_OK=3'd5;
+reg [3:0] bc; reg [7:0] nc;
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin base_state<=B_STANDBY;backgate_adj<=0;bias_level<=0;
+        hard_shutdown<=0;logic_gate_off<=0;brake_active<=0;bc<=0;nc<=0; end
+    else case(base_state)
+        B_STANDBY:  begin backgate_adj<=0;logic_gate_off<=0;brake_active<=0;bias_level<=0;
+                          if(audit_fail) base_state<=B_TRIGGER;
+                          else if(audit_pass) base_state<=B_PASS_OK; end
+        B_TRIGGER:  begin brake_active<=1;bc<=0;nc<=0;base_state<=B_BACKGATE; end
+        B_BACKGATE: begin backgate_adj<=1;if(bc<4'd15) begin bias_level<=bc;bc<=bc+1; end
+                          else begin bias_level<=15;base_state<=B_SHUTDOWN; end end
+        B_SHUTDOWN: begin logic_gate_off<=1;backgate_adj<=0;
+                          if(nc<8'd4) nc<=nc+1; else base_state<=B_HARDLOCK; end
+        B_HARDLOCK: begin hard_shutdown<=1;logic_gate_off<=1;brake_active<=1; end
+        B_PASS_OK:  begin backgate_adj<=0;logic_gate_off<=0;brake_active<=0;
+                          hard_shutdown<=0;base_state<=B_STANDBY; end
+        default: base_state<=B_STANDBY;
+    endcase
+end
+endmodule
+
+// ============================================================
+// tsv_channel
+// ============================================================
+module tsv_channel(input wire clk,rst_n,input wire [63:0] data_from_core,
+    input wire valid_from_core,output reg [63:0] data_to_audit,output reg valid_to_audit,
+    input wire pass_from_audit,fail_from_audit,output reg pass_to_base,fail_to_base,
+    output reg [1:0] tsv_state,output reg tsv_busy);
+localparam TSV_IDLE=2'd0,TSV_UP=2'd1,TSV_DOWN=2'd2,TSV_DONE=2'd3;
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin tsv_state<=TSV_IDLE;data_to_audit<=0;valid_to_audit<=0;
+        pass_to_base<=0;fail_to_base<=0;tsv_busy<=0; end
+    else case(tsv_state)
+        TSV_IDLE: begin valid_to_audit<=0;pass_to_base<=0;fail_to_base<=0;tsv_busy<=0;
+                        if(valid_from_core) begin tsv_state<=TSV_UP;tsv_busy<=1; end end
+        TSV_UP:   begin data_to_audit<=data_from_core;valid_to_audit<=1;tsv_state<=TSV_DOWN; end
+        TSV_DOWN: begin valid_to_audit<=0;if(pass_from_audit||fail_from_audit) begin
+                        pass_to_base<=pass_from_audit;fail_to_base<=fail_from_audit;
+                        tsv_state<=TSV_DONE; end end
+        TSV_DONE: begin tsv_busy<=0;tsv_state<=TSV_IDLE; end
+        default:  tsv_state<=TSV_IDLE;
+    endcase
+end
+endmodule
+
+// ============================================================
+// chip3d_security_top — Top-Level Integration
+// ============================================================
+module chip3d_security_top (
+    input  wire        clk, rst_n,
+    input  wire [63:0] data_in,
+    input  wire        data_valid,
+    input  wire [63:0] stored_biohash,
+    input  wire [63:0] stored_physxor,
+    output wire        sys_pass, sys_fail,
+    output wire        brake_active, hard_shutdown,
+    output wire [63:0] via_data_out
+);
+wire [63:0] core_via; wire core_via_valid,logic_leap,calc_done;
+wire [2:0] core_state,audit_state,base_state;
+wire [63:0] audit_data; wire audit_valid;
+wire a1,a2,a3,a4,a5,i_pass,i_fail;
+wire p_to_base,f_to_base; wire [1:0] tsv_state; wire tsv_busy;
+wire backgate_adj,logic_gate_off; wire [3:0] bias_level;
+
+forksheet_core u_core(.clk(clk),.rst_n(rst_n),.data_in(data_in),.data_valid(data_valid),
+    .via_data_up(core_via),.via_valid(core_via_valid),.logic_leap(logic_leap),
+    .core_state(core_state),.calc_done(calc_done));
+tsv_channel u_tsv(.clk(clk),.rst_n(rst_n),.data_from_core(core_via),
+    .valid_from_core(core_via_valid),.data_to_audit(audit_data),.valid_to_audit(audit_valid),
+    .pass_from_audit(i_pass),.fail_from_audit(i_fail),.pass_to_base(p_to_base),
+    .fail_to_base(f_to_base),.tsv_state(tsv_state),.tsv_busy(tsv_busy));
+m2_intercept u_audit(.clk(clk),.rst_n(rst_n),.via_data(audit_data),.via_valid(audit_valid),
+    .stored_biohash(stored_biohash),.stored_physxor(stored_physxor),
+    .axiom1_pass(a1),.axiom2_pass(a2),.axiom3_pass(a3),.axiom4_pass(a4),.axiom5_pass(a5),
+    .intercept_pass(i_pass),.intercept_fail(i_fail),.audit_state(audit_state));
+sovereign_base u_base(.clk(clk),.rst_n(rst_n),.audit_pass(p_to_base),.audit_fail(f_to_base),
+    .backgate_adj(backgate_adj),.bias_level(bias_level),.hard_shutdown(hard_shutdown),
+    .logic_gate_off(logic_gate_off),.brake_active(brake_active),.base_state(base_state));
+
+assign sys_pass=i_pass; assign sys_fail=i_fail|f_to_base; assign via_data_out=core_via;
+endmodule
