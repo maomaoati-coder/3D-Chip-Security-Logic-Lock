@@ -1,0 +1,59 @@
+`timescale 1ns/1ps
+module tb_tsv_channel;
+reg clk,rst_n; reg [63:0] data_from_core;
+reg valid_from_core,pass_from_audit,fail_from_audit;
+wire [63:0] data_to_audit; wire valid_to_audit;
+wire pass_to_base,fail_to_base; wire [1:0] tsv_state; wire tsv_busy;
+tsv_channel dut(.clk(clk),.rst_n(rst_n),.data_from_core(data_from_core),
+    .valid_from_core(valid_from_core),.data_to_audit(data_to_audit),
+    .valid_to_audit(valid_to_audit),.pass_from_audit(pass_from_audit),
+    .fail_from_audit(fail_from_audit),.pass_to_base(pass_to_base),
+    .fail_to_base(fail_to_base),.tsv_state(tsv_state),.tsv_busy(tsv_busy));
+initial clk=0; always #5 clk=~clk;
+integer pass_cnt=0,fail_cnt=0;
+initial begin $dumpfile("tsv_channel.vcd"); $dumpvars(0,tb_tsv_channel); end
+task check; input cond; input [191:0] label; begin
+    if(cond) begin $display("[PASS] %s",label); pass_cnt=pass_cnt+1; end
+    else     begin $display("[FAIL] %s",label); fail_cnt=fail_cnt+1; end
+end endtask
+initial begin
+    $display("===========================================");
+    $display("  tsv_channel Verification V2.0");
+    $display("===========================================");
+    rst_n=0; data_from_core=0; valid_from_core=0;
+    pass_from_audit=0; fail_from_audit=0;
+    repeat(3) @(posedge clk); rst_n=1; @(posedge clk); #1;
+    check(tsv_state===2'd0, "TC01_reset_to_IDLE");
+    check(tsv_busy===1'b0,  "TC01_not_busy");
+    @(negedge clk); data_from_core=64'hCAFEBABEDEADBEEF; valid_from_core=1;
+    @(posedge clk); #1; valid_from_core=0;
+    @(posedge clk); #1;
+    check(data_to_audit===64'hCAFEBABEDEADBEEF, "TC02_data_forwarded");
+    check(valid_to_audit===1'b1, "TC02_valid_asserted");
+    check(tsv_busy===1'b1,       "TC02_busy_during_transfer");
+    @(posedge clk); #1; pass_from_audit=1;
+    @(posedge clk); #1; pass_from_audit=0;
+    @(posedge clk); #1;
+    check(pass_to_base===1'b1, "TC03_pass_routed");
+    check(fail_to_base===1'b0, "TC03_fail_not_asserted");
+    repeat(3) @(posedge clk); #1;
+    check(tsv_state===2'd0, "TC04_returns_to_IDLE");
+    check(tsv_busy===1'b0,  "TC04_not_busy");
+    @(negedge clk); data_from_core=64'h1234567890ABCDEF; valid_from_core=1;
+    @(posedge clk); #1; valid_from_core=0;
+    repeat(2) @(posedge clk); fail_from_audit=1;
+    @(posedge clk); #1; fail_from_audit=0;
+    @(posedge clk); #1;
+    check(fail_to_base===1'b1, "TC05_fail_routed");
+    @(negedge clk); rst_n=0; repeat(2) @(posedge clk); rst_n=1; @(posedge clk); #1;
+    check(tsv_state===2'd0,    "TC06_reset_clears_state");
+    check(pass_to_base===1'b0, "TC06_reset_clears_pass");
+    check(fail_to_base===1'b0, "TC06_reset_clears_fail");
+    $display("===========================================");
+    $display("  PASSED: %0d | FAILED: %0d",pass_cnt,fail_cnt);
+    if(fail_cnt==0) $display("  tsv_channel ALL PASSED");
+    $display("===========================================");
+    $finish;
+end
+initial begin #200000; $display("[TIMEOUT]"); $finish; end
+endmodule
