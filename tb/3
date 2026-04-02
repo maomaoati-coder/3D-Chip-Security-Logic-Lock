@@ -1,0 +1,54 @@
+`timescale 1ns/1ps
+module tb_sovereign_base;
+reg clk,rst_n,audit_pass,audit_fail;
+wire backgate_adj,hard_shutdown,logic_gate_off,brake_active;
+wire [3:0] bias_level; wire [2:0] base_state;
+sovereign_base dut(.clk(clk),.rst_n(rst_n),.audit_pass(audit_pass),
+    .audit_fail(audit_fail),.backgate_adj(backgate_adj),.bias_level(bias_level),
+    .hard_shutdown(hard_shutdown),.logic_gate_off(logic_gate_off),
+    .brake_active(brake_active),.base_state(base_state));
+initial clk=0; always #5 clk=~clk;
+integer pass_cnt=0,fail_cnt=0;
+initial begin $dumpfile("sovereign_base.vcd"); $dumpvars(0,tb_sovereign_base); end
+task check; input cond; input [191:0] label; begin
+    if(cond) begin $display("[PASS] %s",label); pass_cnt=pass_cnt+1; end
+    else     begin $display("[FAIL] %s",label); fail_cnt=fail_cnt+1; end
+end endtask
+initial begin
+    $display("===========================================");
+    $display("  sovereign_base Verification V2.0");
+    $display("===========================================");
+    rst_n=0; audit_pass=0; audit_fail=0;
+    repeat(3) @(posedge clk); rst_n=1; @(posedge clk); #1;
+    check(base_state===3'd0,    "TC01_reset_to_STANDBY");
+    check(hard_shutdown===1'b0, "TC01_no_shutdown");
+    check(brake_active===1'b0,  "TC01_brake_inactive");
+    @(negedge clk); audit_pass=1; @(posedge clk); #1; audit_pass=0;
+    repeat(3) @(posedge clk); #1;
+    check(brake_active===1'b0,  "TC02_pass_no_brake");
+    check(hard_shutdown===1'b0, "TC02_pass_no_shutdown");
+    @(negedge clk); audit_fail=1; @(posedge clk); #1; audit_fail=0;
+    repeat(5) @(posedge clk); #1;
+    check(brake_active===1'b1,  "TC03_brake_activated");
+    check(backgate_adj===1'b1,  "TC03_backgate_triggered");
+    repeat(20) @(posedge clk); #1;
+    check(bias_level===4'd15,   "TC04_bias_max");
+    repeat(10) @(posedge clk); #1;
+    check(logic_gate_off===1'b1,"TC05_gate_deactivated");
+    repeat(10) @(posedge clk); #1;
+    check(hard_shutdown===1'b1, "TC06_hard_shutdown");
+    check(base_state===3'd4,    "TC06_HARDLOCK_state");
+    @(negedge clk); audit_pass=1; @(posedge clk); #1; audit_pass=0;
+    repeat(3) @(posedge clk); #1;
+    check(hard_shutdown===1'b1, "TC07_lock_not_sw_releasable");
+    @(negedge clk); rst_n=0; repeat(2) @(posedge clk); rst_n=1; @(posedge clk); #1;
+    check(hard_shutdown===1'b0, "TC08_reset_releases_lock");
+    check(base_state===3'd0,    "TC08_back_to_STANDBY");
+    $display("===========================================");
+    $display("  PASSED: %0d | FAILED: %0d",pass_cnt,fail_cnt);
+    if(fail_cnt==0) $display("  sovereign_base ALL PASSED");
+    $display("===========================================");
+    $finish;
+end
+initial begin #200000; $display("[TIMEOUT]"); $finish; end
+endmodule
