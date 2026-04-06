@@ -17,6 +17,7 @@ It takes 2 seconds and means a lot to an independent architect working alone.
 **[⭐ Star this repository](https://github.com/maomaoati-coder/3D Chip Security Logic Lock)**
 
 ---
+![3D Chip Security Logic Lock Architecture](./assets/Image_1773235848971_146.png)
 
 ## What is This?
 
