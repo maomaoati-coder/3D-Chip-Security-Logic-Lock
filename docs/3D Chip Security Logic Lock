@@ -5,7 +5,17 @@ Based on Three-Layer Stacked Structure
 3D芯片安全逻辑锁：多步物理拦截与审计架构
 Independent Chip Architect
 SiliconForge Independent Research
-GitHub: maomaoati-coder  ·  License: Proprietary  ·  Priority Timestamp: March 2026
+
+// Author : maomaoati-coder
+
+// License : MGOVL v2.0 (Mao Guanghui Open View License)
+
+// Copyright : © 2026 Mao Guanghui. All Rights Reserved.
+
+// WARNING: Unauthorized reproduction, adaptation, or commercial use// is STRICTLY PROHIBITED under MGOVL v2.0.
+
+// For inquiries: 
+https://github.com/maomaoati-coder/3D-Chip-Security-Logic-Lock/issues
 Abstract
 This paper presents the design and functional verification of a novel 3D-stacked hardware security logic lock architecture, named 3D Chip Security Logic Lock. The design implements a multi-step physical intercept and audit mechanism using three vertically stacked layers. The system comprises four core modules: (1)
 forksheet_core
