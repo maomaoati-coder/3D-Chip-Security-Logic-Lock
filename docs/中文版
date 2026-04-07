@@ -4,7 +4,16 @@
 3D Chip Security Logic Lock: Design and Verification of Multi-Step Physical Intercept & Audit Architecture
 独立芯片架构师
 SiliconForge独立研究
-GitHub: maomaoati-coder  ·  许可证: 专有 Proprietary  ·  时间戳: 2026年3月
+// Author : maomaoati-coder
+
+// License : MGOVL v2.0 (Mao Guanghui Open View License)
+
+// Copyright : © 2026 Mao Guanghui. All Rights Reserved.
+
+// WARNING: Unauthorized reproduction, adaptation, or commercial use// is STRICTLY PROHIBITED under MGOVL v2.0.
+
+// For inquiries: 
+https://github.com/maomaoati-coder/3D-Chip-Security-Logic-Lock/issues
 摘要
 本文提出并验证了一种新型3D堆叠硬件安全逻辑锁架构， 命名为3D芯片安全逻辑锁（3D Chip Security Logic Lock）， 采用三层物理防护结构实现多步物理拦截与审计机制。 系统由四个核心模块构成： （1）
 forksheet_core
