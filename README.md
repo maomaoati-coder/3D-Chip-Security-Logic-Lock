@@ -9,6 +9,17 @@
 
 ---
 
+// Author : maomaoati-coder
+
+// License : MGOVL v2.0 (Mao Guanghui Open View License)
+
+// Copyright : © 2026 Mao Guanghui. All Rights Reserved.
+
+// WARNING: Unauthorized reproduction, adaptation, or commercial use// is STRICTLY PROHIBITED under MGOVL v2.0.
+
+// For inquiries: 
+https://github.com/maomaoati-coder/3D-Chip-Security-Logic-Lock/issues
+
 ## ⭐ If this project is useful to you, please Star it
 
 Your star helps this work reach more hardware security researchers and engineers.
